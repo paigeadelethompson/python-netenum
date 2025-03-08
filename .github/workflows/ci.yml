@@ -48,6 +48,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install .[dev]
     
-    - name: Run tests with coverage
+    - name: Run tests
       run: |
-        python -m pytest -v --cov=netenum --cov-report=xml --log-cli-level=DEBUG
+        python -m pytest -v --log-cli-level=DEBUG
