@@ -1,8 +1,8 @@
 """Network enumeration module for efficient IP address generation from CIDR ranges.
 
 This module provides tools for enumerating IP addresses from multiple CIDR ranges
-efficiently, without expanding entire ranges in memory. It supports both IPv4 and IPv6
-addresses and provides both synchronous and asynchronous interfaces.
+efficiently, without expanding entire ranges in memory. It supports both IPv4 and
+IPv6 addresses and provides both synchronous and asynchronous interfaces.
 """
 
 import asyncio
@@ -42,7 +42,7 @@ def determine_partition_size(network: IPNetwork) -> int:
         1024
     """
     num_addresses = network.num_addresses
-    logger.debug(f"Determining partition size for network {network} with {num_addresses} addresses")
+    logger.debug(f"Determining partition size for network {network} " f"with {num_addresses} addresses")
 
     if isinstance(network, ipaddress.IPv4Network):
         if num_addresses <= 256:
@@ -55,7 +55,7 @@ def determine_partition_size(network: IPNetwork) -> int:
             return int(num_addresses)
         partition_bits = min(max(16, math.floor(math.log2(float(num_addresses)) - 16)), 20)
 
-    size = 2**partition_bits
+    size = int(2**partition_bits)
     logger.debug(f"Calculated partition size: {size} addresses")
     return size
 
@@ -72,7 +72,8 @@ class NetworkEnumerator:
     in turn to ensure fair distribution when multiple networks are provided.
 
     Attributes:
-        networks: List of tuples containing (generator, address_class) pairs for each network
+        networks: List of tuples containing (generator, address_class) pairs for each
+            network
 
     Examples:
         >>> enumerator = NetworkEnumerator(['192.168.0.0/24', '10.0.0.0/8'])
@@ -90,7 +91,8 @@ class NetworkEnumerator:
         Initialize the enumerator with a list of CIDR ranges.
 
         Args:
-            cidrs: List of CIDR notation strings (e.g., ['192.168.0.0/24', '10.0.0.0/8'])
+            cidrs: List of CIDR notation strings (e.g., ['192.168.0.0/24',
+                '10.0.0.0/8'])
 
         Raises:
             ValueError: If any CIDR string is invalid
@@ -109,7 +111,9 @@ class NetworkEnumerator:
                 f"total_addresses={network.num_addresses}"
             )
 
-            def create_generator(net=network, base=base_int, size=partition_size, cls=addr_class):
+            def create_generator(
+                net: IPNetwork = network, base: int = base_int, size: int = partition_size, cls: type = addr_class
+            ) -> Iterator[int]:
                 """Create a generator for a specific network partition."""
                 num_partitions = math.ceil(float(net.num_addresses) / size)
                 logger.debug(f"Creating generator for {net} with {num_partitions} " f"partitions of size {size}")
@@ -194,7 +198,8 @@ def netenum(cidrs: List[str]) -> Iterator[IPAddress]:
     It stripes across all provided networks, yielding addresses from each in turn.
 
     Args:
-        cidrs: List of CIDR notation strings (e.g., ['192.168.0.0/24', '10.0.0.0/8'])
+        cidrs: List of CIDR notation strings (e.g., ['192.168.0.0/24',
+            '10.0.0.0/8'])
 
     Returns:
         Iterator yielding IPv4Address or IPv6Address objects
@@ -223,7 +228,8 @@ async def aionetenum(cidrs: List[str]) -> AsyncIterator[IPAddress]:
     It works the same way as netenum() but can be used with async for.
 
     Args:
-        cidrs: List of CIDR notation strings (e.g., ['192.168.0.0/24', '10.0.0.0/8'])
+        cidrs: List of CIDR notation strings (e.g., ['192.168.0.0/24',
+            '10.0.0.0/8'])
 
     Returns:
         AsyncIterator yielding IPv4Address or IPv6Address objects
