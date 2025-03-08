@@ -51,9 +51,3 @@ jobs:
     - name: Run tests with coverage
       run: |
         python -m pytest -v --cov=netenum --cov-report=xml --log-cli-level=DEBUG
-    
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./coverage.xml
-        fail_ci_if_error: true 
