@@ -7,7 +7,7 @@ name = "netenum"
 version = "0.1.0"
 description = "Efficient IP address enumerator that interpolates across IPv4 and IPv6 CIDR ranges"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 license = "MIT"
 authors = [
     { name = "Paige Thompson", email = "paige@paige.bio" }
@@ -17,17 +17,16 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Internet",
     "Topic :: System :: Networking",
 ]
-dependencies = [
-    "ipaddress; python_version < '3.7'"  # Built into Python 3.7+
-]
+dependencies = []
 
 [project.optional-dependencies]
 dev = [
@@ -53,7 +52,7 @@ log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 
 [tool.black]
 line-length = 120
-target-version = ["py37", "py38", "py39", "py310"]
+target-version = ["py38", "py39", "py310", "py311", "py312", "py313"]
 include = '\.pyi?$'
 extend-exclude = '''
 # A regex preceded with ^/ will apply only to files and directories
