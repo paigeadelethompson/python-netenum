@@ -1,6 +1,7 @@
 """Test suite for the core network enumeration functionality."""
 
 import ipaddress
+
 import pytest
 
 from netenum.core import NetworkEnumerator, determine_partition_size

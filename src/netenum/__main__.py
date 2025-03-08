@@ -5,9 +5,9 @@ This module provides the main entry point for the command-line tool,
 allowing users to enumerate IP addresses from CIDR ranges provided via stdin.
 """
 
-import sys
-import random
 import argparse
+import random
+import sys
 from typing import List
 
 from .core import netenum
