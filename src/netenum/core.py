@@ -6,11 +6,14 @@ addresses and provides both synchronous and asynchronous interfaces.
 """
 
 import asyncio
+import ipaddress
+import logging
 import math
 from collections import deque
 from typing import AsyncIterator, Iterator, List, Union
 
-import ipaddress
+# Configure logging
+logger = logging.getLogger(__name__)
 
 IPAddress = Union[ipaddress.IPv4Address, ipaddress.IPv6Address]
 IPNetwork = Union[ipaddress.IPv4Network, ipaddress.IPv6Network]
@@ -39,19 +42,22 @@ def determine_partition_size(network: IPNetwork) -> int:
         1024
     """
     num_addresses = network.num_addresses
+    logger.debug(f"Determining partition size for network {network} with {num_addresses} addresses")
+
     if isinstance(network, ipaddress.IPv4Network):
         if num_addresses <= 256:
+            logger.debug(f"Using exact size {num_addresses} for small IPv4 network")
             return int(num_addresses)
-        partition_bits = min(
-            max(8, math.floor(math.log2(float(num_addresses)) - 8)), 10
-        )
+        partition_bits = min(max(8, math.floor(math.log2(float(num_addresses)) - 8)), 10)
     else:
         if num_addresses <= 65536:
+            logger.debug(f"Using exact size {num_addresses} for small IPv6 network")
             return int(num_addresses)
-        partition_bits = min(
-            max(16, math.floor(math.log2(float(num_addresses)) - 16)), 20
-        )
-    return 2 ** partition_bits
+        partition_bits = min(max(16, math.floor(math.log2(float(num_addresses)) - 16)), 20)
+
+    size = 2**partition_bits
+    logger.debug(f"Calculated partition size: {size} addresses")
+    return size
 
 
 class NetworkEnumerator:
@@ -89,23 +95,31 @@ class NetworkEnumerator:
         Raises:
             ValueError: If any CIDR string is invalid
         """
+        logger.debug(f"Initializing NetworkEnumerator with {len(cidrs)} networks: {cidrs}")
         self.networks = []
+
         for cidr in cidrs:
             network = ipaddress.ip_network(cidr)
             base_int = int(network.network_address)
             partition_size = determine_partition_size(network)
-            addr_class = (
-                ipaddress.IPv6Address
-                if isinstance(network, ipaddress.IPv6Network)
-                else ipaddress.IPv4Address
+            addr_class = ipaddress.IPv6Address if isinstance(network, ipaddress.IPv6Network) else ipaddress.IPv4Address
+            logger.debug(
+                f"Network {cidr}: base={base_int}, "
+                f"partition_size={partition_size}, "
+                f"total_addresses={network.num_addresses}"
             )
 
-            def create_generator(net=network, base=base_int, size=partition_size):
+            def create_generator(net=network, base=base_int, size=partition_size, cls=addr_class):
                 """Create a generator for a specific network partition."""
                 num_partitions = math.ceil(float(net.num_addresses) / size)
+                logger.debug(f"Creating generator for {net} with {num_partitions} " f"partitions of size {size}")
                 for i in range(int(num_partitions)):
                     start = base + (i * size)
                     end = min(start + size, int(net.broadcast_address) + 1)
+                    # Use the correct address class for debug messages
+                    start_addr = cls(start)
+                    end_addr = cls(end - 1)
+                    logger.debug(f"Yielding partition {i+1}/{num_partitions}: " f"addresses {start_addr} to {end_addr}")
                     yield from range(start, end)
 
             self.networks.append((create_generator(), addr_class))
@@ -120,16 +134,25 @@ class NetworkEnumerator:
         Yields:
             IPAddress: IPv4Address or IPv6Address objects
         """
+        logger.debug("Starting synchronous iteration")
         active_gens = deque(self.networks)
+        addresses_yielded = 0
 
         while active_gens:
             try:
                 gen, addr_class = active_gens[0]
                 addr_int = next(gen)
-                yield addr_class(addr_int)
+                addr = addr_class(addr_int)
+                addresses_yielded += 1
+                if addresses_yielded % 10000 == 0:
+                    logger.debug(f"Yielded {addresses_yielded} addresses so far")
+                yield addr
                 active_gens.rotate(-1)
             except StopIteration:
+                logger.debug(f"Finished network {active_gens[0][1].__name__}")
                 active_gens.popleft()
+
+        logger.debug(f"Enumeration complete. Total addresses yielded: {addresses_yielded}")
 
     async def __aiter__(self) -> AsyncIterator[IPAddress]:
         """
@@ -141,17 +164,26 @@ class NetworkEnumerator:
         Yields:
             IPAddress: IPv4Address or IPv6Address objects
         """
+        logger.debug("Starting asynchronous iteration")
         active_gens = deque(self.networks)
+        addresses_yielded = 0
 
         while active_gens:
             try:
                 gen, addr_class = active_gens[0]
                 addr_int = next(gen)
-                yield addr_class(addr_int)
+                addr = addr_class(addr_int)
+                addresses_yielded += 1
+                if addresses_yielded % 10000 == 0:
+                    logger.debug(f"Yielded {addresses_yielded} addresses so far")
+                yield addr
                 active_gens.rotate(-1)
                 await asyncio.sleep(0)
             except StopIteration:
+                logger.debug(f"Finished network {active_gens[0][1].__name__}")
                 active_gens.popleft()
+
+        logger.debug(f"Async enumeration complete. Total addresses yielded: {addresses_yielded}")
 
 
 def netenum(cidrs: List[str]) -> Iterator[IPAddress]:
@@ -179,6 +211,7 @@ def netenum(cidrs: List[str]) -> Iterator[IPAddress]:
     Raises:
         ValueError: If any CIDR string is invalid
     """
+    logger.debug(f"Creating synchronous enumerator for networks: {cidrs}")
     return iter(NetworkEnumerator(cidrs))
 
 
@@ -205,4 +238,5 @@ async def aionetenum(cidrs: List[str]) -> AsyncIterator[IPAddress]:
     Raises:
         ValueError: If any CIDR string is invalid
     """
-    return NetworkEnumerator(cidrs).__aiter__() 
+    logger.debug(f"Creating asynchronous enumerator for networks: {cidrs}")
+    return NetworkEnumerator(cidrs).__aiter__()
