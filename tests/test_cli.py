@@ -35,8 +35,7 @@ def test_main_basic_output(capsys) -> None:
     input_data = "192.168.0.0/30\n"
     expected = "192.168.0.0\n192.168.0.1\n192.168.0.2\n192.168.0.3\n"
 
-    with patch("sys.stdin", io.StringIO(input_data)), \
-         patch("sys.argv", ["netenum"]):
+    with patch("sys.stdin", io.StringIO(input_data)), patch("sys.argv", ["netenum"]):
         main()
         captured = capsys.readouterr()
         assert captured.out == expected
@@ -45,12 +44,8 @@ def test_main_basic_output(capsys) -> None:
 def test_main_random_order(capsys) -> None:
     """Test output with random ordering."""
     input_data = "192.168.0.0/24\n"
-    expected_addresses = {
-        str(ipaddress.IPv4Address(addr))
-        for addr in range(0xC0A80000, 0xC0A80100)
-    }
-    with patch("sys.stdin", io.StringIO(input_data)), \
-         patch("sys.argv", ["netenum", "-r"]):
+    expected_addresses = {str(ipaddress.IPv4Address(addr)) for addr in range(0xC0A80000, 0xC0A80100)}
+    with patch("sys.stdin", io.StringIO(input_data)), patch("sys.argv", ["netenum", "-r"]):
         main()
         output_lines = set(capsys.readouterr().out.splitlines())
         assert len(output_lines) == 256
@@ -60,9 +55,9 @@ def test_main_random_order(capsys) -> None:
 def test_main_invalid_input(capsys) -> None:
     """Test handling of invalid input."""
     input_data = "invalid\n"
-    with patch("sys.stdin", io.StringIO(input_data)), \
-         patch("sys.argv", ["netenum"]), \
-         pytest.raises(SystemExit) as exc_info:
+    with patch("sys.stdin", io.StringIO(input_data)), patch("sys.argv", ["netenum"]), pytest.raises(
+        SystemExit
+    ) as exc_info:
         main()
     assert exc_info.value.code == 1
     captured = capsys.readouterr()
@@ -71,9 +66,7 @@ def test_main_invalid_input(capsys) -> None:
 
 def test_main_empty_input(capsys) -> None:
     """Test handling of empty input."""
-    with patch("sys.stdin", io.StringIO("")), \
-         patch("sys.argv", ["netenum"]), \
-         pytest.raises(SystemExit) as exc_info:
+    with patch("sys.stdin", io.StringIO("")), patch("sys.argv", ["netenum"]), pytest.raises(SystemExit) as exc_info:
         main()
     assert exc_info.value.code == 1
     captured = capsys.readouterr()

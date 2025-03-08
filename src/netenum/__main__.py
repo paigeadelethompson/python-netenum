@@ -36,9 +36,7 @@ def main() -> None:
     try:
         cidrs = get_cidrs_from_stdin()
         if not cidrs:
-            sys.stderr.write(
-                "Error: No CIDR ranges provided.\nPipe CIDR ranges to stdin, one per line.\n"
-            )
+            sys.stderr.write("Error: No CIDR ranges provided.\nPipe CIDR ranges to stdin, one per line.\n")
             sys.exit(1)
 
         # Get all addresses
